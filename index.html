@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101625">
+  <title>Nova OS</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="bootScreen" class="boot-screen" aria-label="Starting Nova OS">
+    <div class="boot-mark">N<span>.</span></div>
+    <p>Nova OS</p>
+    <div class="boot-track"><i></i></div>
+    <small>Preparing your workspace</small>
+  </div>
+
+  <section id="lockScreen" class="lock-screen is-hidden" aria-label="Lock screen">
+    <div class="lock-shade"></div>
+    <div class="lock-content">
+      <div class="lock-clock" id="lockClock">--:--</div>
+      <div class="lock-date" id="lockDate"></div>
+      <div class="lock-user"><span class="avatar" id="lockAvatar">N</span><strong id="lockUsername">Nova User</strong></div>
+      <form id="unlockForm" class="unlock-form">
+        <label class="sr-only" for="pinInput">PIN</label>
+        <input id="pinInput" inputmode="numeric" autocomplete="off" maxlength="12" type="password" placeholder="Enter PIN" aria-label="Enter PIN">
+        <button class="primary-button" type="submit">Unlock <span aria-hidden="true">→</span></button>
+        <small id="pinError" role="status">Enter your passcode to continue</small>
+      </form>
+    </div>
+    <div class="lock-footer"><span>◉ Connected</span><span>Nova OS · 1.0</span></div>
+  </section>
+
+  <main id="desktopShell" class="desktop-shell is-hidden">
+    <div id="desktop" class="desktop" aria-label="Desktop">
+      <div class="wallpaper-glow"></div>
+      <div id="desktopIcons" class="desktop-icons"></div>
+      <div id="windowLayer" class="window-layer"></div>
+      <div id="matrixLayer" class="matrix-layer is-hidden"><canvas id="matrixCanvas"></canvas><button class="matrix-close" aria-label="Close effect">×</button></div>
+      <div id="contextMenu" class="context-menu is-hidden" role="menu"></div>
+      <div id="modalLayer"></div>
+
+      <section id="startMenu" class="start-menu panel is-hidden" aria-label="Start menu"></section>
+      <section id="searchPanel" class="search-panel panel is-hidden" aria-label="System search"></section>
+      <section id="notificationPanel" class="notification-panel panel is-hidden" aria-label="Notification center"></section>
+      <section id="calendarPanel" class="calendar-panel panel is-hidden" aria-label="Calendar"></section>
+
+      <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+      <div id="shutdownScreen" class="shutdown-screen is-hidden"><div class="shutdown-orb"></div><strong id="shutdownText">Shutting down Nova OS</strong><span>It's now safe to close this tab.</span><button id="powerOnButton" class="primary-button">Power on</button></div>
+    </div>
+
+    <footer id="taskbar" class="taskbar">
+      <div class="taskbar-main">
+        <button id="startButton" class="taskbar-button start-button" aria-label="Start menu" title="Start"><span class="nova-glyph">N</span></button>
+        <button id="searchButton" class="taskbar-button search-button" aria-label="Search" title="Search (Ctrl+K)"><span>⌕</span><span class="search-label">Search anything</span></button>
+        <div id="pinnedApps" class="pinned-apps"></div>
+        <div class="taskbar-divider"></div>
+        <div id="runningApps" class="running-apps"></div>
+      </div>
+      <div class="system-tray">
+        <button id="trayNetwork" class="tray-icon" title="Wi-Fi connected" aria-label="Wi-Fi connected">◔</button>
+        <button id="trayVolume" class="tray-icon" title="Volume" aria-label="Volume">◖</button>
+        <button id="trayBattery" class="tray-icon" title="Battery 86%" aria-label="Battery 86 percent">▰</button>
+        <button id="notificationButton" class="tray-icon notification-button" title="Notifications" aria-label="Notifications">♧<i id="notificationDot" class="notification-dot is-hidden"></i></button>
+        <button id="clockButton" class="clock-button" aria-label="Open calendar"><span id="taskbarTime">--:--</span><small id="taskbarDate">---</small></button>
+        <button id="profileButton" class="profile-tray" aria-label="User profile"><span class="avatar avatar-small" id="trayAvatar">N</span></button>
+      </div>
+    </footer>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
