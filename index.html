@@ -15,6 +15,30 @@
     <small>Preparing your workspace</small>
   </div>
 
+  <section id="setupScreen" class="setup-screen is-hidden" aria-label="First-time setup">
+    <form id="setupForm" class="setup-card">
+      <div class="boot-mark">N<span>.</span></div>
+      <h1>Welcome to Nova OS</h1>
+      <p>Let’s set up your computer.</p>
+      <label for="setupLanguage">Language</label>
+      <select id="setupLanguage" name="language">
+        <option value="en">English</option>
+        <option value="sq">Shqip (Albanian)</option>
+      </select>
+      <label for="setupName">Your name</label>
+      <input id="setupName" name="username" type="text" maxlength="30" required autocomplete="name" placeholder="Enter your name">
+      <fieldset>
+        <legend>Would you like a passcode?</legend>
+        <label><input type="radio" name="usePasscode" value="no" checked> No passcode</label>
+        <label><input type="radio" name="usePasscode" value="yes"> Set a passcode</label>
+      </fieldset>
+      <label id="setupPinLabel" class="is-hidden" for="setupPin">Passcode (4–12 digits)</label>
+      <input id="setupPin" class="is-hidden" name="pin" type="password" inputmode="numeric" minlength="4" maxlength="12" pattern="[0-9]{4,12}" autocomplete="new-password">
+      <small class="setup-note">Your data is saved only in this browser. It is not synced or protected by a real account.</small>
+      <button class="primary-button" type="submit">Finish setup <span aria-hidden="true">→</span></button>
+    </form>
+  </section>
+
   <section id="lockScreen" class="lock-screen is-hidden" aria-label="Lock screen">
     <div class="lock-shade"></div>
     <div class="lock-content">
@@ -43,6 +67,15 @@
       <section id="startMenu" class="start-menu panel is-hidden" aria-label="Start menu"></section>
       <section id="searchPanel" class="search-panel panel is-hidden" aria-label="System search"></section>
       <section id="notificationPanel" class="notification-panel panel is-hidden" aria-label="Notification center"></section>
+      <section id="volumePanel" class="volume-panel panel is-hidden" aria-label="Volume controls">
+        <div class="volume-panel-head"><strong>Volume</strong><span id="volumeValue">68%</span></div>
+        <div class="volume-control">
+          <span id="volumePanelIcon" aria-hidden="true">◖</span>
+          <input id="volumeSlider" type="range" min="0" max="100" step="1" value="68" aria-label="Volume">
+        </div>
+        <button class="volume-test" data-action="volume-test">Test sound</button>
+        <span id="volumeStatus" class="sr-only" role="status" aria-live="polite"></span>
+      </section>
       <section id="calendarPanel" class="calendar-panel panel is-hidden" aria-label="Calendar"></section>
 
       <div id="toastStack" class="toast-stack" aria-live="polite"></div>
@@ -59,7 +92,7 @@
       </div>
       <div class="system-tray">
         <button id="trayNetwork" class="tray-icon" title="Wi-Fi connected" aria-label="Wi-Fi connected">◔</button>
-        <button id="trayVolume" class="tray-icon" title="Volume" aria-label="Volume">◖</button>
+        <button id="trayVolume" class="tray-icon" title="Volume" aria-label="Volume: 68%"><span id="volumeTrayIcon" aria-hidden="true">◖</span></button>
         <button id="trayBattery" class="tray-icon" title="Battery 86%" aria-label="Battery 86 percent">▰</button>
         <button id="notificationButton" class="tray-icon notification-button" title="Notifications" aria-label="Notifications">♧<i id="notificationDot" class="notification-dot is-hidden"></i></button>
         <button id="clockButton" class="clock-button" aria-label="Open calendar"><span id="taskbarTime">--:--</span><small id="taskbarDate">---</small></button>
