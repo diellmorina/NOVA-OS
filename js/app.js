@@ -2,10 +2,18 @@
   'use strict';
 
   const STORE_KEY = 'nova-os-state-v1';
+  const STORAGE_QUOTA = 10 * 1024 ** 3;
+  const SYSTEM_STORAGE_USAGE = 2 * 1024 ** 3;
   const APP_DEFS = [
     { id: 'files', name: 'Files', icon: '📁', width: 760, height: 520 },
     { id: 'notes', name: 'Notepad', icon: '📝', width: 700, height: 510 },
     { id: 'calculator', name: 'Calculator', icon: '🧮', width: 360, height: 510 },
+    { id: 'calendar', name: 'Calendar', icon: '📅', width: 760, height: 590 },
+    { id: 'clock', name: 'Clock & Timer', icon: '⏱️', width: 520, height: 500 },
+    { id: 'weather', name: 'Weather', icon: '🌦️', width: 560, height: 560 },
+    { id: 'storage', name: 'Storage Manager', icon: '💾', width: 620, height: 480 },
+    { id: 'gmail', name: 'Gmail', icon: '✉️', width: 640, height: 420 },
+    { id: 'maps', name: 'Google Maps', icon: '📍', width: 880, height: 620 },
     { id: 'browser', name: 'Browser', icon: '🌐', width: 820, height: 590 },
     { id: 'settings', name: 'Settings', icon: '⚙️', width: 760, height: 560 },
     { id: 'terminal', name: 'Terminal', icon: '🖥️', width: 690, height: 460 },
@@ -13,10 +21,11 @@
     { id: 'performance', name: 'Performance', icon: '◒', width: 680, height: 450 },
     { id: 'profile', name: 'Your account', icon: '👤', width: 520, height: 440 }
   ];
-  const DESKTOP_APPS = ['files', 'notes', 'calculator', 'browser', 'settings', 'terminal', 'recycle'];
+  const DESKTOP_APPS = ['files', 'notes', 'calculator', 'calendar', 'clock', 'weather', 'storage', 'gmail', 'maps', 'browser', 'settings', 'terminal', 'recycle'];
   const PINNED_APPS = ['files', 'browser', 'notes', 'calculator', 'settings'];
+  const NOTIFICATION_SOURCES = [...APP_DEFS.map(({ id, name, icon }) => ({ id, name, icon })), { id: 'camera', name: 'Camera', icon: '📷' }];
   const DEFAULT_STATE = {
-    settings: { theme: 'dark', wallpaper: 0, customWallpaper: '', accent: '#8ed8c4', taskbarPosition: 'bottom', iconSize: 'medium', desktopIconLayout: 'free', notifications: true, sounds: false, volume: 68, pin: '', language: 'en' },
+    settings: { theme: 'dark', wallpaper: 0, customWallpaper: '', accent: '#8ed8c4', taskbarPosition: 'bottom', iconSize: 'medium', desktopIconLayout: 'free', notifications: true, notificationBanners: true, notificationCenter: true, notificationApps: Object.fromEntries(NOTIFICATION_SOURCES.map(({ id }) => [id, true])), sounds: false, volume: 68, pin: '', language: 'en', bluetooth: false, bluetoothDevice: '' },
     user: { username: 'Nova User', computerName: 'NOVA-DESKTOP', picture: '' },
     files: [
       { id: 'welcome', name: 'Welcome.txt', type: 'text', location: 'Desktop', content: 'Welcome to Nova OS.\n\nYour browser is now a little desktop of its own.\n\nTry the Start menu, open an app, or right-click in this folder.', modified: Date.now() },
@@ -27,7 +36,7 @@
       { id: 'music', name: 'Soft Focus.mp3', type: 'audio', location: 'Music', content: '03:42 · Nova Radio', modified: Date.now() },
       { id: 'video', name: 'Studio tour.mp4', type: 'video', location: 'Videos', content: '01:18 · Local video sample', modified: Date.now() }
     ],
-    recycle: [], drafts: {}, bookmarks: ['https://www.google.com', 'https://www.wikipedia.org', 'https://www.youtube.com'], notifications: [], recent: [], desktopPositions: {}, windowPositions: {}
+    recycle: [], drafts: {}, events: [], bookmarks: ['https://www.google.com', 'https://www.wikipedia.org', 'https://www.youtube.com'], notifications: [], recent: [], desktopPositions: {}, windowPositions: {}
   };
   const clone = value => JSON.parse(JSON.stringify(value));
   const SQ = {
@@ -68,6 +77,49 @@
     'Calculator': 'Kalkulatori',
     'Browser': 'Shfletuesi',
     'Settings': 'Cilësimet',
+    'Calendar': 'Kalendari',
+    'Clock & Timer': 'Ora dhe kohëmatësi',
+    'Weather': 'Moti',
+    'Storage Manager': 'Menaxhuesi i hapësirës',
+    'Gmail': 'Gmail',
+    'Google Maps': 'Google Maps',
+    'Open Gmail': 'Hap Gmail',
+    'Open Google Maps': 'Hap Google Maps',
+    'Open Google Maps ↗': 'Hap Google Maps ↗',
+    'Real messages require your Google account.': 'Për mesazhet reale duhet të hyni në llogarinë tuaj Google.',
+    'You will sign in on Google’s website.': 'Do të identifikoheni në faqen e Google.',
+    'Search Google Maps': 'Kërko në Google Maps',
+    'Search a place or address': 'Kërko një vend ose adresë',
+    'Use my location': 'Përdor vendndodhjen time',
+    'Google Maps · Search, directions, and places': 'Google Maps · Kërko, udhëzime dhe vende',
+    'Getting your location…': 'Po merret vendndodhja…',
+    'Location access was denied.': 'Qasja te vendndodhja u refuzua.',
+    'Unable to get your location.': 'Nuk u arrit të merret vendndodhja.',
+    'Camera': 'Kamera',
+    'Camera': 'Kamera',
+    'Show banner notifications': 'Shfaq njoftimet si banderolë',
+    'Show notifications in notification center': 'Shfaq njoftimet në qendrën e njoftimeve',
+    'Choose how notifications appear.': 'Zgjidhni si shfaqen njoftimet.',
+    'Notifications by app': 'Njoftimet sipas aplikacionit',
+    'Allow notifications from this app': 'Lejo njoftimet nga ky aplikacion',
+    'General': 'Të përgjithshme',
+    'Bluetooth': 'Bluetooth',
+    'General preferences': 'Preferencat e përgjithshme',
+    'Manage common device preferences.': 'Menaxhoni preferencat e zakonshme të pajisjes.',
+    'Device name': 'Emri i pajisjes',
+    'Bluetooth settings': 'Cilësimet e Bluetooth-it',
+    'Bluetooth is off': 'Bluetooth-i është i fikur',
+    'Bluetooth is on': 'Bluetooth-i është i ndezur',
+    'Turn on Bluetooth to see nearby devices.': 'Ndizni Bluetooth-in për të parë pajisjet pranë.',
+    'Nearby devices': 'Pajisjet pranë',
+    'This is a local simulation; no physical Bluetooth devices are connected.': 'Ky është simulim lokal; nuk lidhet me pajisje fizike Bluetooth.',
+    'Connect simulated devices to Nova OS.': 'Lidhni pajisjet e simuluara me Nova OS.',
+    'Connect': 'Lidhu',
+    'Disconnect': 'Shkëputu',
+    'Headphones': 'Kufje',
+    'Phone': 'Telefoni',
+    'Mouse': 'Miu',
+    'Manage your account': 'Menaxho llogarinë tënde',
     'Terminal': 'Terminali',
     'Recycle Bin': 'Koshi i riciklimit',
     'Performance': 'Performanca',
@@ -76,6 +128,11 @@
     'Search': 'Kërko',
     'Search anything': 'Kërko gjithçka',
     'Notifications': 'Njoftimet',
+    'Enter fullscreen': 'Hap ekranin e plotë',
+    'Exit fullscreen': 'Dil nga ekrani i plotë',
+    'Fullscreen unavailable': 'Ekrani i plotë nuk është i disponueshëm',
+    'Fullscreen is unavailable in this browser.': 'Ekrani i plotë nuk mbështetet nga ky shfletues.',
+    'Unable to change fullscreen mode.': 'Nuk mund të ndryshohet mënyra e ekranit të plotë.',
     'Open calendar': 'Hap kalendarin',
     'User profile': 'Profili i përdoruesit',
     'Places': 'Vendndodhjet',
@@ -196,6 +253,9 @@
     'Personalize the details shown around Nova OS.': 'Përshtatni të dhënat që shfaqen në Nova OS.',
     'This computer': 'Ky kompjuter',
     'Profile picture URL': 'Adresa e fotos së profilit',
+    'Profile photo': 'Foto e profilit',
+    'Choose profile photo': 'Zgjidhni foton e profilit',
+    'Profile photo not changed': 'Fotoja e profilit nuk u ndryshua',
     'Save changes': 'Ruaj ndryshimet',
     'Your name': 'Emri juaj',
     'Power': 'Energjia',
@@ -387,6 +447,64 @@
     'Setting updated': 'Cilësimi u përditësua',
     'Your desktop has a new view.': 'Desktopi juaj ka një pamje të re.',
     'Settings reset': 'Cilësimet u rivendosën',
+    'Digital clock': 'Ora digjitale',
+    'Timer': 'Kohëmatësi',
+    'Minutes': 'Minuta',
+    'Start timer': 'Nis kohëmatësin',
+    'Pause timer': 'Pusho kohëmatësin',
+    'Reset timer': 'Rivendos kohëmatësin',
+    'Timer finished': 'Kohëmatësi përfundoi',
+    'Your timer is complete.': 'Kohëmatësi juaj përfundoi.',
+    'Previous month': 'Muaji i kaluar',
+    'Next month': 'Muaji i ardhshëm',
+    'Event title': 'Titulli i eventit',
+    'Date': 'Data',
+    'Time': 'Ora',
+    'Add event': 'Shto event',
+    'Delete event': 'Fshi eventin',
+    'No events for this day.': 'Nuk ka evente për këtë ditë.',
+    'All day': 'Gjithë ditën',
+    'Event added': 'Eventi u shtua',
+    'Current conditions': 'Kushtet aktuale',
+    'Humidity': 'Lagështia',
+    '5-day forecast': 'Parashikimi 5-ditor',
+    'Location not loaded': 'Vendndodhja nuk u ngarkua',
+    'Allow location access to see local weather.': 'Lejoni qasjen te vendndodhja për të parë motin lokal.',
+    'Refresh weather': 'Rifresko motin',
+    'Getting your location…': 'Po merret vendndodhja…',
+    'Location is not available in this browser.': 'Vendndodhja nuk ofrohet në këtë shfletues.',
+    'Weather service unavailable.': 'Shërbimi i motit nuk është i disponueshëm.',
+    'Location access was denied.': 'Qasja te vendndodhja u refuzua.',
+    'Unable to get your location.': 'Nuk u arrit të merret vendndodhja.',
+    'Live forecast for your location': 'Parashikim i drejtpërdrejtë për vendndodhjen tuaj.',
+    'Clear sky': 'Qiell i kthjellët',
+    'Mainly clear': 'Kryesisht kthjellët',
+    'Partly cloudy': 'Pjesërisht me re',
+    'Overcast': 'Plotësisht me re',
+    'Fog': 'Mjegull',
+    'Drizzle': 'Shi i imët',
+    'Freezing drizzle': 'Shi i imët ngrirës',
+    'Rain': 'Shi',
+    'Freezing rain': 'Shi ngrirës',
+    'Snow': 'Dëborë',
+    'Snow grains': 'Kokrra dëbore',
+    'Rain showers': 'Reshje shiu',
+    'Snow showers': 'Reshje dëbore',
+    'Thunderstorm': 'Stuhi',
+    'Unknown conditions': 'Kushte të panjohura',
+    'Weather data by Open-Meteo': 'Të dhënat e motit nga Open-Meteo',
+    'Calculating storage…': 'Po llogaritet hapësira…',
+    'System storage used': 'Hapësira e përdorur nga sistemi',
+    'Managed files': 'Skedarë të menaxhuar',
+    'Stored items': 'Elemente të ruajtura',
+    'Folders': 'Dosje',
+    'Stored in Nova OS': 'Të ruajtura në Nova OS',
+    'Space used': 'Hapësira e përdorur',
+    'Files and folders': 'Skedarë dhe dosje',
+    'Of simulated storage capacity': 'Nga kapaciteti i simuluar i hapësirës',
+    'Simulated storage capacity.': 'Kapacitet i simuluar i hapësirës ruajtëse.',
+    'Approximate local storage usage.': 'Përdorimi i përafërt i hapësirës lokale.',
+    'Refresh storage': 'Rifresko hapësirën',
     'Refresh': 'Rifresko',
     'Properties': 'Vetitë',
     'Move to…': 'Zhvendos te…',
@@ -476,6 +594,10 @@
       if (match) translation = `${match[1]} ${match[1] === '1' ? 'element' : 'elemente'} · ${SQ[match[2]] || match[2]}`;
       match = trimmed.match(/^(\d+(?:\.\d+)?) KB used locally$/);
       if (!translation && match) translation = `${match[1]} KB të përdorura lokalisht`;
+      match = trimmed.match(/^(.+) free$/);
+      if (!translation && match) translation = `${match[1]} të lira`;
+      match = trimmed.match(/^(.+) total$/);
+      if (!translation && match) translation = `${match[1]} gjithsej`;
       match = trimmed.match(/^(\d+) characters · (\d+) words$/);
       if (!translation && match) translation = `${match[1]} karaktere · ${match[2]} fjalë`;
       match = trimmed.match(/^(\d+)m ago$/);
@@ -534,10 +656,11 @@
     const savedCustomWallpaper = typeof saved.settings?.customWallpaper === 'string' && /^data:image\/jpeg;base64,/i.test(saved.settings.customWallpaper) ? saved.settings.customWallpaper : '';
     return {
         ...clone(DEFAULT_STATE), ...saved,
-        settings: { ...clone(DEFAULT_STATE.settings), ...(saved.settings || {}), wallpaper: saved.settings?.wallpaper === 'custom' ? (savedCustomWallpaper ? 'custom' : DEFAULT_STATE.settings.wallpaper) : saved.settings?.wallpaper ?? DEFAULT_STATE.settings.wallpaper, customWallpaper: savedCustomWallpaper, desktopIconLayout: saved.settings?.desktopIconLayout === 'grid' ? 'grid' : 'free', volume: Number.isFinite(savedVolume) ? Math.max(0, Math.min(100, savedVolume)) : DEFAULT_STATE.settings.volume },
+        settings: { ...clone(DEFAULT_STATE.settings), ...(saved.settings || {}), wallpaper: saved.settings?.wallpaper === 'custom' ? (savedCustomWallpaper ? 'custom' : DEFAULT_STATE.settings.wallpaper) : saved.settings?.wallpaper ?? DEFAULT_STATE.settings.wallpaper, customWallpaper: savedCustomWallpaper, desktopIconLayout: saved.settings?.desktopIconLayout === 'grid' ? 'grid' : 'free', bluetooth: saved.settings?.bluetooth === true, bluetoothDevice: typeof saved.settings?.bluetoothDevice === 'string' ? saved.settings.bluetoothDevice : '', notificationBanners: saved.settings?.notificationBanners !== false, notificationCenter: saved.settings?.notificationCenter !== false, notificationApps: Object.fromEntries(NOTIFICATION_SOURCES.map(({ id }) => [id, saved.settings?.notificationApps?.[id] !== false])), volume: Number.isFinite(savedVolume) ? Math.max(0, Math.min(100, savedVolume)) : DEFAULT_STATE.settings.volume },
         user: { ...clone(DEFAULT_STATE.user), ...(saved.user || {}) },
         files: Array.isArray(saved.files) ? saved.files : clone(DEFAULT_STATE.files),
         recycle: Array.isArray(saved.recycle) ? saved.recycle : [], drafts: saved.drafts || {},
+        events: Array.isArray(saved.events) ? saved.events.filter(item => item && typeof item.title === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.date)) : [],
         notifications: Array.isArray(saved.notifications) ? saved.notifications : [],
         bookmarks: Array.isArray(saved.bookmarks) ? saved.bookmarks.filter(site => /^https?:\/\//i.test(site)).length ? saved.bookmarks.filter(site => /^https?:\/\//i.test(site)) : clone(DEFAULT_STATE.bookmarks) : clone(DEFAULT_STATE.bookmarks),
         recent: Array.isArray(saved.recent) ? saved.recent : [], desktopPositions: saved.desktopPositions || {}, windowPositions: saved.windowPositions || {}
@@ -571,6 +694,8 @@
     return clone(DEFAULT_STATE);
   };
   let state = loadState();
+  let profilePictureDraft = null;
+  let profilePictureName = '';
   let zIndex = 20;
   let selectedFileId = null;
   let activeNoteId = null;
@@ -580,6 +705,8 @@
   let fileQuery = '';
   let calcExpression = '';
   let calendarOffset = 0;
+  let calendarViewDate = new Date();
+  let selectedCalendarDate = '';
   let terminalHistory = [];
   let terminalHistoryIndex = -1;
   let matrixFrame = 0;
@@ -596,13 +723,15 @@
   };
   const getAppWindow = id => $(`.window[data-app="${id}"]`);
   const windows = () => $$('.window', $('#windowLayer'));
-  const notify = (title, message, icon = '◉') => {
-    if (!state.settings.notifications) return;
-    const item = { id: `${Date.now()}-${Math.random()}`, title, message, icon, time: Date.now() };
-    state.notifications.unshift(item);
-    state.notifications = state.notifications.slice(0, 40);
-    persist(); renderNotificationDot();
-    toast(title, message, icon);
+  const notify = (title, message, icon = '◉', source = windows().find(win => win.classList.contains('active-window'))?.dataset.app || 'system') => {
+    if (!state.settings.notifications || state.settings.notificationApps[source] === false) return;
+    if (state.settings.notificationCenter) {
+      const item = { id: `${Date.now()}-${Math.random()}`, title, message, icon, time: Date.now() };
+      state.notifications.unshift(item);
+      state.notifications = state.notifications.slice(0, 40);
+      persist(); renderNotificationDot();
+    }
+    if (state.settings.notificationBanners) toast(title, message, icon);
     if (state.settings.sounds) playSound();
   };
   function playSound() {
@@ -641,6 +770,33 @@
     $('#volumeSlider').setAttribute('aria-valuetext', `${volume}%`);
     $('#volumeValue').textContent = `${volume}%`;
   }
+  function updateFullscreenButton() {
+    const button = $('#desktopFullscreenButton');
+    const isFullscreen = document.fullscreenElement === $('#desktopShell');
+    const label = state.settings.language === 'sq'
+      ? (isFullscreen ? 'Dil nga ekrani i plotë' : 'Hap ekranin e plotë')
+      : (isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen');
+    button.classList.toggle('active', isFullscreen);
+    button.setAttribute('aria-pressed', String(isFullscreen));
+    button.setAttribute('aria-label', label);
+    button.title = label;
+  }
+  async function toggleDesktopFullscreen() {
+    const shell = $('#desktopShell');
+    try {
+      if (document.fullscreenElement === shell) await document.exitFullscreen();
+      else {
+        if (!shell.requestFullscreen) {
+          toast('Fullscreen unavailable', 'Fullscreen is unavailable in this browser.', '⛶');
+          return;
+        }
+        await shell.requestFullscreen();
+      }
+    } catch (error) {
+      console.error('Unable to change Nova OS fullscreen mode.', error);
+      toast('Fullscreen unavailable', 'Unable to change fullscreen mode.', '⛶');
+    }
+  }
   function toast(title, message, icon = '◉') {
     const stack = $('#toastStack');
     const node = document.createElement('div');
@@ -649,9 +805,13 @@
     stack.append(node);
     setTimeout(() => node.remove(), 3900);
   }
-  const setAvatar = (node, size = 'avatar') => {
+  const setAvatar = (node, size = 'avatar', picture = state.user.picture) => {
     node.className = size;
-    node.innerHTML = state.user.picture ? `<img alt="" src="${escapeHTML(state.user.picture)}">` : escapeHTML((state.user.username.trim()[0] || 'N').toUpperCase());
+    if (node.id === 'lockAvatar' && !picture) {
+      node.innerHTML = '<svg class="lock-avatar-portrait" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="#050505"/><path d="M5 64c2-15 12-23 27-23s25 8 27 23" fill="#f6f7f8"/><path d="M27 38h10v13H27z" fill="#f4f4f4"/><ellipse cx="32" cy="28" rx="16" ry="19" fill="#f4f4f4"/><path d="M16 24c0-13 7-20 16-20s16 7 16 20c-5-3-8-7-10-12-5 7-12 10-22 12" fill="#090909"/><path d="M16 24h15v9H16c-2-2-2-6 0-9zm17 0h15c2 3 2 7 0 9H33z" fill="#050505"/><path d="M30 27h4" stroke="#050505" stroke-width="2.5"/><path d="M20 26h8m9 0h8" stroke="#fff" stroke-linecap="round" stroke-opacity=".7" stroke-width="1.2"/><path d="M26 37q6 6 12 0" fill="none" stroke="#333" stroke-linecap="round" stroke-width="1.8"/><path d="M29 39q3 1.5 6 0" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="1.2"/></svg>';
+      return;
+    }
+    node.innerHTML = picture ? `<img alt="" src="${escapeHTML(picture)}">` : escapeHTML((state.user.username.trim()[0] || 'N').toUpperCase());
   };
   function applySettings() {
     const shell = $('#desktopShell');
@@ -744,12 +904,14 @@
     $('#lockUsername').textContent = state.user.username;
     setAvatar($('#lockAvatar'));
     setAvatar($('#trayAvatar'), 'avatar avatar-small');
+    const profileAvatar = $('[data-profile-avatar]');
+    if (profileAvatar) setAvatar(profileAvatar, 'avatar', profilePictureDraft ?? state.user.picture);
     const username = $('#startMenu .start-top strong'); if (username) username.textContent = state.user.username;
   }
   function renderDesktopIcons() {
     const holder = $('#desktopIcons');
     holder.innerHTML = DESKTOP_APPS.map((id, index) => {
-      const app = appDef(id); const pos = state.desktopPositions[id] || { x: 12, y: 12 + index * 98 };
+      const app = appDef(id); const rows = Math.max(1, Math.floor((window.innerHeight - 120) / 98)); const pos = state.desktopPositions[id] || { x: 12 + Math.floor(index / rows) * 104, y: 12 + (index % rows) * 98 };
       return `<button class="desktop-icon" data-app="${id}" style="left:${pos.x}px;top:${pos.y}px" aria-label="Open ${escapeHTML(app.name)}"><span class="app-glyph">${app.icon}</span><span>${escapeHTML(app.name)}</span></button>`;
     }).join('');
     $$('.desktop-icon', holder).forEach(icon => {
@@ -817,15 +979,21 @@
     if (id === 'files') return fileManagerMarkup();
     if (id === 'notes') return notesMarkup();
     if (id === 'calculator') return calculatorMarkup();
+    if (id === 'calendar') return calendarAppMarkup();
+    if (id === 'clock') return clockAppMarkup();
+    if (id === 'weather') return weatherMarkup();
+    if (id === 'storage') return storageMarkup();
+    if (id === 'gmail') return gmailMarkup();
+    if (id === 'maps') return mapsMarkup();
     if (id === 'browser') return browserMarkup();
     if (id === 'terminal') return terminalMarkup();
-    if (id === 'settings') return settingsMarkup('Personalization');
+    if (id === 'settings') return settingsMarkup(getAppWindow('settings')?.dataset.settingsSection || 'Personalization');
     if (id === 'recycle') return recycleMarkup();
     if (id === 'performance') return performanceMarkup();
     if (id === 'profile') return profileMarkup();
     return '<p class="empty-state">Nothing to show.</p>';
   }
-  function openApp(id) {
+  function openApp(id, { silent = false } = {}) {
     const app = appDef(id); let win = getAppWindow(id);
     if (win) { win.classList.remove('minimized'); focusWindow(win); }
     else {
@@ -835,14 +1003,17 @@
       const defaultTop = Math.max(10, (window.innerHeight - app.height) / 2 - 24 + (windows().length % 4) * 18);
       win.style.left = `${saved?.x ?? defaultLeft}px`; win.style.top = `${saved?.y ?? defaultTop}px`;
       win.style.width = `${saved?.width ?? app.width}px`; win.style.height = `${saved?.height ?? app.height}px`;
-      win.innerHTML = `<header class="window-titlebar"><div class="window-title"><span class="app-glyph">${app.icon}</span><span>${escapeHTML(app.name)}</span></div><div class="window-controls"><button class="window-control" data-window-action="minimize" aria-label="Minimize">−</button><button class="window-control" data-window-action="maximize" aria-label="Maximize">□</button><button class="window-control close" data-window-action="close" aria-label="Close">×</button></div></header><div class="window-body">${appContent(id)}</div>`;
+      win.innerHTML = `<header class="window-titlebar"><div class="window-title"><span class="app-glyph">${app.icon}</span><span>${escapeHTML(app.name)}</span></div><div class="window-controls"><button class="window-control" data-window-action="minimize" aria-label="Minimize" title="Minimize">−</button><button class="window-control" data-window-action="restart" aria-label="Restart app" title="Restart app">↻</button><button class="window-control" data-window-action="maximize" aria-label="Maximize" title="Maximize">□</button><button class="window-control close" data-window-action="close" aria-label="Close" title="Close">×</button></div></header><div class="window-body">${appContent(id)}</div>`;
       $('#windowLayer').append(win); bindWindowDrag(win); focusWindow(win);
       if (id === 'browser') bindBrowser(win);
       if (id === 'performance') startPerformance(win);
+      if (id === 'clock') startClockApp(win);
+      if (id === 'weather') loadWeather(win);
+      if (id === 'storage') refreshStorage(win);
       if (id === 'terminal') setTimeout(() => $('.terminal-form input', win)?.focus(), 30);
     }
     state.recent = [id, ...state.recent.filter(item => item !== id)].slice(0, 6); persist(); renderTaskbar(); closePanels();
-    if (!win.dataset.opened) { notify(`${app.name} opened`, 'Ready when you are.', app.icon); win.dataset.opened = '1'; }
+    if (!win.dataset.opened) { if (!silent) notify(`${app.name} opened`, 'Ready when you are.', app.icon); win.dataset.opened = '1'; }
     if (id === 'terminal') setTimeout(() => $('.terminal-form input', win)?.focus(), 30);
     return win;
   }
@@ -883,9 +1054,29 @@
   function closeWindow(win) {
     if (win.dataset.app === 'performance') clearInterval(performanceTimer);
     if (win.dataset.app === 'notes') saveDraft();
+    if (win._clockInterval) clearInterval(win._clockInterval);
+    if (win._timerInterval) clearInterval(win._timerInterval);
+    if (win._weatherController) win._weatherController.abort();
+    if (win.dataset.app === 'profile') { profilePictureDraft = null; profilePictureName = ''; }
     win.remove(); renderTaskbar();
     const remaining = windows().filter(item => !item.classList.contains('minimized'));
     if (remaining.length) focusWindow(remaining.at(-1));
+  }
+  function restartApp(win) {
+    const id = win.dataset.app;
+    const wasMaximized = win.classList.contains('maximized');
+    const restoreBounds = win.dataset.restore;
+    if (!wasMaximized) persistWindowPosition(win);
+    if (id === 'calculator') calcExpression = '';
+    if (id === 'files') { currentFolder = 'Desktop'; fileQuery = ''; fileSort = 'name'; selectedFileId = null; }
+    if (id === 'terminal') { terminalHistory = []; terminalHistoryIndex = -1; }
+    closeWindow(win);
+    const restarted = openApp(id, { silent: true });
+    if (wasMaximized) {
+      restarted.dataset.restore = restoreBounds || JSON.stringify({ left: restarted.style.left, top: restarted.style.top, width: restarted.style.width, height: restarted.style.height });
+      restarted.classList.add('maximized');
+      focusWindow(restarted);
+    }
   }
   function fileManagerMarkup() {
     const places = ['Home', 'Desktop', 'Documents', 'Downloads', 'Pictures', 'Music', 'Videos'];
@@ -900,7 +1091,9 @@
   function rerenderApp(id) {
     const win = getAppWindow(id); if (!win) return;
     const activeElement = document.activeElement; const keep = activeElement?.classList.contains('file-search') || activeElement?.classList.contains('global-search');
+    const settingsScrollTop = id === 'settings' ? $('.settings-main', win)?.scrollTop || 0 : 0;
     $('.window-body', win).innerHTML = appContent(id);
+    if (id === 'settings') $('.settings-main', win).scrollTop = settingsScrollTop;
     if (keep) { const input = $('.file-search', win); input?.focus(); input?.setSelectionRange(input.value.length, input.value.length); }
   }
   function notesMarkup() {
@@ -918,34 +1111,205 @@
   }
   function calculatorMarkup() {
     const keys = ['AC', '⌫', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '−', '1', '2', '3', '+', '±', '0', '.', '='];
-    return `<div class="calc-shell"><div class="calc-display"><div class="calc-expression">${escapeHTML(calcExpression)}</div><div class="calc-result" data-calc-result>0</div></div><div class="calc-grid">${keys.map(key => `<button class="calc-key ${['÷', '×', '−', '+', '%'].includes(key) ? 'operator' : ''} ${key === '=' ? 'equals' : ''}" data-calc="${key}">${key}</button>`).join('')}</div><div class="calc-history" data-calc-history>${(state.calcHistory || []).slice(0, 3).map(row => `<div><span>${escapeHTML(row.expression)}</span><strong>${escapeHTML(row.result)}</strong></div>`).join('')}</div></div>`;
+    const numberKeys = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '±', '0', '.'];
+    const operatorKeys = ['AC', '⌫', '%', '÷', '×', '−', '+', '='];
+    const scientificKeys = ['(', ')', '√', 'x²', '^', 'π', 'sin', 'cos', 'tan', 'ln', 'log', '1/x'];
+    const button = key => `<button class="calc-key ${scientificKeys.includes(key) ? 'calc-scientific' : ''} ${['÷', '×', '−', '+', '%', '^'].includes(key) ? 'operator' : ''} ${key === '=' ? 'equals' : ''}" data-calc="${key}">${key}</button>`;
+    return `<div class="calc-shell"><div class="calc-display"><div class="calc-expression">${escapeHTML(calcExpression)}</div><div class="calc-result" data-calc-result>0</div></div><div class="calc-grid">${keys.map(button).join('')}</div><div class="calc-full-layout"><div class="calc-full-numbers">${numberKeys.map(button).join('')}</div><div class="calc-full-tools"><div class="calc-full-operators">${operatorKeys.map(button).join('')}</div><div class="calc-full-scientific">${scientificKeys.map(button).join('')}</div></div></div><div class="calc-history" data-calc-history>${(state.calcHistory || []).slice(0, 3).map(row => `<div><span>${escapeHTML(row.expression)}</span><strong>${escapeHTML(row.result)}</strong></div>`).join('')}</div></div>`;
   }
   function browserMarkup() {
     return `<div class="browser-shell"><div class="browser-tabs"><button class="browser-tab active" data-browser-tab="1">New tab</button><button class="browser-tab add-tab" data-action="browser-new-tab" title="New tab">＋</button></div><div class="browser-bar"><button data-action="browser-back" title="Back" aria-label="Back">←</button><button data-action="browser-forward" title="Forward" aria-label="Forward">→</button><button data-action="browser-refresh" title="Reload" aria-label="Reload">↻</button><button data-action="browser-home" title="Home" aria-label="Home">⌂</button><form class="browser-address-form"><input class="browser-address" aria-label="Search Google or enter a web address" placeholder="Search Google or enter a web address" value="https://www.google.com"></form><button data-action="browser-bookmark" title="Bookmark" aria-label="Bookmark">☆</button></div><div class="browser-bookmarks">${state.bookmarks.map(site => `<button data-site="${escapeHTML(site)}">☆ ${escapeHTML(site.replace(/^https?:\/\//, '').replace('.nova', ''))}</button>`).join('')}</div><div class="browser-page" data-browser-page></div></div>`;
+  }
+  function localDateKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+  function calendarAppMarkup() {
+    if (!selectedCalendarDate) selectedCalendarDate = localDateKey(new Date());
+    const firstDay = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), 1);
+    const monthLength = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 0).getDate();
+    const weekdays = Array.from({ length: 7 }, (_, index) => new Intl.DateTimeFormat(locale(), { weekday: 'short' }).format(new Date(2023, 0, 1 + index)));
+    const days = weekdays.map(day => `<span class="calendar-app-weekday">${escapeHTML(day)}</span>`);
+    for (let blank = 0; blank < firstDay.getDay(); blank++) days.push('<span class="calendar-app-empty"></span>');
+    for (let day = 1; day <= monthLength; day++) {
+      const date = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), day);
+      const key = localDateKey(date);
+      const classes = ['calendar-app-day', key === localDateKey(new Date()) ? 'today' : '', key === selectedCalendarDate ? 'selected' : '', state.events.some(event => event.date === key) ? 'has-events' : ''].filter(Boolean).join(' ');
+      days.push(`<button class="${classes}" data-calendar-day="${key}" aria-label="${escapeHTML(formatDate(date, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }))}">${day}</button>`);
+    }
+    const selectedDate = new Date(`${selectedCalendarDate}T12:00:00`);
+    const events = state.events.filter(event => event.date === selectedCalendarDate).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    return `<div class="calendar-app"><section class="calendar-app-main"><header class="calendar-app-heading"><button data-calendar-month="previous" aria-label="Previous month">‹</button><h2>${escapeHTML(formatDate(firstDay, { month: 'long', year: 'numeric' }))}</h2><button data-calendar-month="next" aria-label="Next month">›</button></header><div class="calendar-app-grid">${days.join('')}</div></section><aside class="calendar-app-events"><h2>${escapeHTML(formatDate(selectedDate, { weekday: 'long', month: 'long', day: 'numeric' }))}</h2><div class="calendar-event-list">${events.length ? events.map(event => `<article class="calendar-event"><span class="calendar-event-time">${escapeHTML(event.time || 'All day')}</span><strong>${escapeHTML(event.title)}</strong><button data-delete-event="${escapeHTML(event.id)}" aria-label="Delete event">×</button></article>`).join('') : '<p class="empty-state">No events for this day.</p>'}</div><form class="calendar-event-form"><label>Event title<input name="title" maxlength="80" required placeholder="Event title"></label><label>Date<input name="date" type="date" required value="${selectedCalendarDate}"></label><label>Time<input name="time" type="time"></label><button class="primary-button" type="submit">Add event</button></form></aside></div>`;
+  }
+  function clockAppMarkup() {
+    return `<div class="clock-app"><section class="clock-face"><span class="clock-app-label">Digital clock</span><time class="clock-app-time" data-live-clock>--:--:--</time><span class="clock-app-date" data-live-date></span></section><section class="timer-face"><h2>Timer</h2><div class="timer-display" data-timer-display>00:00</div><label>Minutes<input type="number" data-timer-minutes min="1" max="999" value="5"></label><div class="timer-actions"><button class="primary-button" data-clock-action="start">Start timer</button><button data-clock-action="reset">Reset timer</button></div></section></div>`;
+  }
+  function startClockApp(win) {
+    updateClockApp(win);
+    win._clockInterval = setInterval(() => {
+      if (!win.isConnected) { clearInterval(win._clockInterval); return; }
+      updateClockApp(win);
+    }, 1000);
+  }
+  function updateClockApp(win) {
+    if (!win?.isConnected) return;
+    const now = new Date();
+    $('[data-live-clock]', win).textContent = new Intl.DateTimeFormat(locale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(now);
+    $('[data-live-date]', win).textContent = formatDate(now, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  }
+  function updateTimerDisplay(win, seconds) {
+    const safeSeconds = Math.max(0, seconds);
+    $('[data-timer-display]', win).textContent = `${String(Math.floor(safeSeconds / 60)).padStart(2, '0')}:${String(safeSeconds % 60).padStart(2, '0')}`;
+  }
+  function handleClockAction(win, action) {
+    const button = $('[data-clock-action="start"]', win);
+    if (action === 'reset') {
+      clearInterval(win._timerInterval); win._timerInterval = null; win._timerDeadline = 0; win._timerRemaining = 0;
+      updateTimerDisplay(win, 0); button.textContent = 'Start timer'; button.dataset.clockAction = 'start';
+      return;
+    }
+    if (action === 'pause') {
+      clearInterval(win._timerInterval); win._timerInterval = null; win._timerRemaining = Math.ceil(Math.max(0, win._timerDeadline - Date.now()) / 1000);
+      updateTimerDisplay(win, win._timerRemaining); button.textContent = 'Start timer'; button.dataset.clockAction = 'start';
+      return;
+    }
+    if (!win._timerRemaining) win._timerRemaining = Math.max(1, Number($('[data-timer-minutes]', win).value) || 1) * 60;
+    win._timerDeadline = Date.now() + win._timerRemaining * 1000;
+    button.textContent = 'Pause timer'; button.dataset.clockAction = 'pause';
+    const tick = () => {
+      win._timerRemaining = Math.ceil(Math.max(0, win._timerDeadline - Date.now()) / 1000);
+      updateTimerDisplay(win, win._timerRemaining);
+      if (!win._timerRemaining) {
+        clearInterval(win._timerInterval); win._timerInterval = null; button.textContent = 'Start timer'; button.dataset.clockAction = 'start';
+        notify('Timer finished', 'Your timer is complete.', '⏱️', 'clock');
+      }
+    };
+    tick(); win._timerInterval = setInterval(tick, 250);
   }
   function terminalMarkup() {
     const albanian = state.settings.language === 'sq';
     return `<div class="terminal-shell"><div class="terminal-output" data-terminal-output><div>${albanian ? 'Terminali Nova OS [Versioni 1.0]' : 'Nova OS Terminal [Version 1.0]'}</div><div>${albanian ? 'Shkruani ' : 'Type '}<span style="color:var(--accent)">help</span>${albanian ? ' për të eksploruar. Shkruani ' : ' to explore. Type '}<span style="color:var(--accent)">matrix</span>${albanian ? ' për një devijim të vogël.' : ' for a little detour.'}</div><br></div><form class="terminal-form"><label>${escapeHTML(state.user.computerName.toLowerCase())}&nbsp;›</label><input aria-label="Terminal command" autocomplete="off" spellcheck="false"></form></div>`;
   }
   function settingsMarkup(section) {
-    const sections = ['Personalization', 'System', 'Notifications', 'Privacy', 'About'];
+    const sections = ['General', 'Personalization', 'System', 'Bluetooth', 'Notifications', 'Privacy', 'About'];
     let content = '';
-    if (section === 'Personalization') content = `<div class="settings-section"><h3>Appearance</h3><div class="setting-row"><span>Language</span><select data-setting="language"><option value="en" ${state.settings.language === 'en' ? 'selected' : ''}>English</option><option value="sq" ${state.settings.language === 'sq' ? 'selected' : ''}>Shqip (Albanian)</option></select></div><div class="setting-row"><span>Color mode<small>Choose a comfortable workspace</small></span><select data-setting="theme"><option value="dark" ${state.settings.theme === 'dark' ? 'selected' : ''}>Dark</option><option value="light" ${state.settings.theme === 'light' ? 'selected' : ''}>Light</option></select></div><div class="setting-row"><span>Accent color</span><input type="color" data-setting="accent" value="${escapeHTML(state.settings.accent)}"></div><div class="setting-row"><span>Wallpaper</span><div class="wallpaper-swatches">${['linear-gradient(135deg,#18253c,#9a8e79)', 'linear-gradient(145deg,#19283b,#467572 58%,#f1af6b)', 'linear-gradient(135deg,#20364b,#8ed8c4)', 'linear-gradient(135deg,#29263b,#d2ae91)'].map((bg, index) => `<button class="wallpaper-swatch ${state.settings.wallpaper !== 'custom' && Number(state.settings.wallpaper) === index ? 'selected' : ''}" style="background:${bg}" data-wallpaper="${index}" aria-label="Wallpaper ${index + 1}"></button>`).join('')}${state.settings.customWallpaper ? `<button class="wallpaper-swatch custom-wallpaper-swatch ${state.settings.wallpaper === 'custom' ? 'selected' : ''}" style="background-image:url('${escapeHTML(state.settings.customWallpaper)}')" data-wallpaper="custom" aria-label="Custom photo"></button>` : ''}</div></div><div class="setting-row"><span>Custom photo<small>Choose an image file up to 15 MB.</small></span><div class="wallpaper-custom-controls"><label class="wallpaper-upload-button">Choose photo<input type="file" data-wallpaper-upload accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/avif,image/tiff" aria-label="Choose a custom wallpaper photo"></label>${state.settings.customWallpaper ? '<button class="wallpaper-remove-button" data-action="wallpaper-remove">Remove photo</button>' : ''}</div></div></div><div class="settings-section"><h3>Desktop</h3><div class="setting-row"><span>Taskbar position</span><select data-setting="taskbarPosition"><option value="bottom" ${state.settings.taskbarPosition === 'bottom' ? 'selected' : ''}>Bottom</option><option value="top" ${state.settings.taskbarPosition === 'top' ? 'selected' : ''}>Top</option><option value="left" ${state.settings.taskbarPosition === 'left' ? 'selected' : ''}>Left</option></select></div><div class="setting-row"><span>Desktop icon size</span><select data-setting="iconSize"><option value="small" ${state.settings.iconSize === 'small' ? 'selected' : ''}>Small</option><option value="medium" ${state.settings.iconSize === 'medium' ? 'selected' : ''}>Medium</option><option value="large" ${state.settings.iconSize === 'large' ? 'selected' : ''}>Large</option></select></div></div><div class="settings-section"><h3>Account security</h3><div class="setting-row"><span>Lock screen PIN</span><button data-action="change-pin">Change PIN</button></div></div>`;
+    if (section === 'General') content = `<div class="settings-section"><h3>General preferences</h3><div class="setting-row"><span>Language</span><select data-setting="language"><option value="en" ${state.settings.language === 'en' ? 'selected' : ''}>English</option><option value="sq" ${state.settings.language === 'sq' ? 'selected' : ''}>Shqip (Albanian)</option></select></div><div class="setting-row"><span>Device name</span><span>${escapeHTML(state.user.computerName)}</span></div><button data-open-app="profile">Manage your account</button></div>`;
+    if (section === 'Personalization') content = `<div class="settings-section"><h3>Appearance</h3><div class="setting-row"><span>Language</span><select data-setting="language"><option value="en" ${state.settings.language === 'en' ? 'selected' : ''}>English</option><option value="sq" ${state.settings.language === 'sq' ? 'selected' : ''}>Shqip (Albanian)</option></select></div><div class="setting-row"><span>Color mode<small>Choose a comfortable workspace</small></span><select data-setting="theme"><option value="dark" ${state.settings.theme === 'dark' ? 'selected' : ''}>Dark</option><option value="light" ${state.settings.theme === 'light' ? 'selected' : ''}>Light</option></select></div><div class="setting-row"><span>Accent color</span><input type="color" data-setting="accent" value="${escapeHTML(state.settings.accent)}"></div><div class="setting-row"><span>Wallpaper</span><div class="wallpaper-swatches">${['linear-gradient(135deg,#18253c,#9a8e79)', 'linear-gradient(145deg,#19283b,#467572 58%,#f1af6b)', 'linear-gradient(135deg,#20364b,#8ed8c4)', 'linear-gradient(135deg,#29263b,#d2ae91)', 'linear-gradient(145deg,#102a43,#2c7da0 55%,#a9d6e5)', 'linear-gradient(135deg,#302b63,#b33771 58%,#ff8c42)', 'linear-gradient(135deg,#1b4332,#74c69d 55%,#d8f3dc)'].map((bg, index) => `<button class="wallpaper-swatch ${state.settings.wallpaper !== 'custom' && Number(state.settings.wallpaper) === index ? 'selected' : ''}" style="background:${bg}" data-wallpaper="${index}" aria-label="Wallpaper ${index + 1}"></button>`).join('')}${state.settings.customWallpaper ? `<button class="wallpaper-swatch custom-wallpaper-swatch ${state.settings.wallpaper === 'custom' ? 'selected' : ''}" style="background-image:url('${escapeHTML(state.settings.customWallpaper)}')" data-wallpaper="custom" aria-label="Custom photo"></button>` : ''}</div></div><div class="setting-row"><span>Custom photo<small>Choose an image file up to 15 MB.</small></span><div class="wallpaper-custom-controls"><label class="wallpaper-upload-button">Choose photo<input type="file" data-wallpaper-upload accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/avif,image/tiff" aria-label="Choose a custom wallpaper photo"></label>${state.settings.customWallpaper ? '<button class="wallpaper-remove-button" data-action="wallpaper-remove">Remove photo</button>' : ''}</div></div></div><div class="settings-section"><h3>Desktop</h3><div class="setting-row"><span>Taskbar position</span><select data-setting="taskbarPosition"><option value="bottom" ${state.settings.taskbarPosition === 'bottom' ? 'selected' : ''}>Bottom</option><option value="top" ${state.settings.taskbarPosition === 'top' ? 'selected' : ''}>Top</option><option value="left" ${state.settings.taskbarPosition === 'left' ? 'selected' : ''}>Left</option></select></div><div class="setting-row"><span>Desktop icon size</span><select data-setting="iconSize"><option value="small" ${state.settings.iconSize === 'small' ? 'selected' : ''}>Small</option><option value="medium" ${state.settings.iconSize === 'medium' ? 'selected' : ''}>Medium</option><option value="large" ${state.settings.iconSize === 'large' ? 'selected' : ''}>Large</option></select></div></div><div class="settings-section"><h3>Account security</h3><div class="setting-row"><span>Lock screen PIN</span><button data-action="change-pin">Change PIN</button></div></div>`;
     if (section === 'System') content = `<div class="settings-section"><h3>Device specifications</h3>${[['Edition', 'Nova OS Simulator'], ['Version', '1.0.0'], ['Browser engine', 'JavaScript'], ['Computer name', escapeHTML(state.user.computerName)], ['Memory', 'Simulated · 8 GB'], ['Storage', `${(JSON.stringify(state.files).length / 1024).toFixed(1)} KB used locally`]].map(row => `<div class="setting-row"><span>${row[0]}</span><span>${row[1]}</span></div>`).join('')}<button data-open-app="performance">Open performance dashboard</button></div>`;
-    if (section === 'Notifications') content = `<div class="settings-section"><h3>Notification preferences</h3><div class="setting-row"><span>Show notifications<small>Application alerts and system messages</small></span><input type="checkbox" data-setting="notifications" ${state.settings.notifications ? 'checked' : ''}></div><div class="setting-row"><span>Notification sounds</span><input type="checkbox" data-setting="sounds" ${state.settings.sounds ? 'checked' : ''}></div><button data-action="fake-message">Send a test message</button></div>`;
+    if (section === 'Bluetooth') content = `<div class="settings-section"><h3>Bluetooth settings</h3><div class="setting-row"><span>Bluetooth<small>${state.settings.bluetooth ? 'Bluetooth is on' : 'Bluetooth is off'}</small></span><input type="checkbox" data-setting="bluetooth" ${state.settings.bluetooth ? 'checked' : ''}></div><p class="settings-subtitle">This is a local simulation; no physical Bluetooth devices are connected.</p>${state.settings.bluetooth ? `<h3>Nearby devices</h3>${[['nova-buds', 'Nova Buds', 'Headphones'], ['nova-phone', 'Nova Phone', 'Phone'], ['studio-mouse', 'Studio Mouse', 'Mouse']].map(([id, name, type]) => `<div class="setting-row bluetooth-device"><span>${name}<small>${type}</small></span><button data-bluetooth-device="${id}">${state.settings.bluetoothDevice === id ? 'Disconnect' : 'Connect'}</button></div>`).join('')}` : '<p class="settings-subtitle">Turn on Bluetooth to see nearby devices.</p>'}</div>`;
+    if (section === 'Notifications') content = `<div class="settings-section"><h3>Notification preferences</h3><div class="setting-row"><span>Show notifications<small>Application alerts and system messages</small></span><input type="checkbox" data-setting="notifications" ${state.settings.notifications ? 'checked' : ''}></div><div class="setting-row"><span>Show banner notifications</span><input type="checkbox" data-setting="notificationBanners" ${state.settings.notificationBanners ? 'checked' : ''}></div><div class="setting-row"><span>Show notifications in notification center</span><input type="checkbox" data-setting="notificationCenter" ${state.settings.notificationCenter ? 'checked' : ''}></div><div class="setting-row"><span>Notification sounds</span><input type="checkbox" data-setting="sounds" ${state.settings.sounds ? 'checked' : ''}></div><h3>Notifications by app</h3><div class="notification-app-list">${NOTIFICATION_SOURCES.map(({ id, name, icon }) => `<label class="setting-row"><span><span aria-hidden="true">${icon}</span> ${name}</span><input type="checkbox" data-notification-app="${id}" aria-label="${escapeHTML(name)} notifications" ${state.settings.notificationApps[id] ? 'checked' : ''}></label>`).join('')}</div><button data-action="fake-message">Send a test message</button></div>`;
     if (section === 'Privacy') content = `<div class="settings-section"><h3>Local data</h3><p class="settings-subtitle">Your files and settings are stored in this browser on this device.</p><div class="setting-row"><span>Clear notification history</span><button data-action="clear-notifications">Clear</button></div><div class="setting-row"><span>Reset settings<small>Restore appearance and notification defaults</small></span><button data-action="reset-settings">Reset settings</button></div><div class="setting-row"><span>Reset Nova OS<small>Delete local files, notes, and simulator settings</small></span><button class="danger-button" data-action="reset-os">Reset OS</button></div></div>`;
     if (section === 'About') content = `<div class="settings-section"><div class="profile-preview"><div class="boot-mark" style="font-size:44px">N<span>.</span></div><div><h3>Nova OS Simulator</h3><small class="settings-subtitle">Version 1.0.0 · Stable</small></div></div><p class="settings-subtitle">A browser desktop made with HTML, CSS &amp; JavaScript. Everything stays on this device.</p><div class="setting-row"><span>Computer</span><span>${escapeHTML(state.user.computerName)}</span></div><div class="setting-row"><span>Signed in as</span><span>${escapeHTML(state.user.username)}</span></div><button data-open-app="profile">Manage your account</button></div>`;
     if (section === 'Privacy') content += `<div class="settings-section"><h3>Passcode options</h3><div class="setting-row"><span>Change lock screen passcode<small>Choose a new 4 to 12 digit PIN.</small></span><button data-action="change-pin">Change PIN</button></div><div class="setting-row"><span>Remove passcode<small>${state.settings.pin ? 'Unlock without entering a PIN.' : 'The lock screen already has no passcode.'}</small></span><button class="danger-button" data-action="remove-pin" ${state.settings.pin ? '' : 'disabled'}>Remove passcode</button></div></div>`;
-    return `<div class="settings-shell"><nav class="settings-nav">${sections.map(item => `<button class="side-item ${section === item ? 'selected' : ''}" data-settings-section="${item}">${({ Personalization: '◐', System: '▣', Notifications: '♧', Privacy: '◇', About: 'ⓘ' })[item]} &nbsp;${item}</button>`).join('')}</nav><section class="settings-main"><h2>${section}</h2><p class="settings-subtitle">${section === 'Personalization' ? 'Make this workspace feel like yours.' : section === 'System' ? 'A quick view of this simulated device.' : section === 'Privacy' ? 'Manage the data stored in this browser.' : section === 'About' ? 'A small desktop, made for the web.' : 'Choose which alerts you receive.'}</p>${content}</section></div>`;
+    return `<div class="settings-shell"><nav class="settings-nav">${sections.map(item => `<button class="side-item ${section === item ? 'selected' : ''}" data-settings-section="${item}">${({ General: '⚙', Personalization: '◐', System: '▣', Bluetooth: 'ᛒ', Notifications: '♧', Privacy: '◇', About: 'ⓘ' })[item]} &nbsp;${item}</button>`).join('')}</nav><section class="settings-main"><h2>${section}</h2><p class="settings-subtitle">${section === 'General' ? 'Manage common device preferences.' : section === 'Personalization' ? 'Make this workspace feel like yours.' : section === 'System' ? 'A quick view of this simulated device.' : section === 'Bluetooth' ? 'Connect simulated devices to Nova OS.' : section === 'Privacy' ? 'Manage the data stored in this browser.' : section === 'About' ? 'A small desktop, made for the web.' : 'Choose which alerts you receive.'}</p>${content}</section></div>`;
   }
   function recycleMarkup() {
     return `<div class="app-toolbar"><button data-action="empty-recycle" ${state.recycle.length ? '' : 'disabled'}>Empty recycle bin</button><span class="toolbar-spacer"></span><span style="font-size:10px;color:#9eabbe">${state.recycle.length} item${state.recycle.length === 1 ? '' : 's'}</span></div><div class="file-list">${state.recycle.length ? state.recycle.map(file => `<div class="file-card"><span class="file-glyph">${iconForFile(file)}</span><strong>${escapeHTML(file.name)}</strong><small>Deleted ${formatDate(new Date(file.deletedAt))}</small><div style="display:flex;gap:4px"><button data-restore="${escapeHTML(file.id)}" title="Restore">↶</button><button data-permanent-delete="${escapeHTML(file.id)}" title="Delete permanently">×</button></div></div>`).join('') : '<div class="empty-state">Recycle Bin is empty.</div>'}</div>`;
+  }
+  function weatherMarkup() {
+    return `<div class="weather-app"><header class="weather-app-heading"><div><h2>Weather</h2><p data-weather-location>Location not loaded</p></div><button data-action="weather-refresh" aria-label="Refresh weather" title="Refresh weather">↻</button></header><p class="weather-status" data-weather-status>Allow location access to see local weather.</p><section class="weather-current" data-weather-current><div class="weather-current-main"><span class="weather-icon" data-weather-icon>☀️</span><div><strong data-weather-temperature>--°</strong><span data-weather-description>Current conditions</span></div></div><div class="weather-humidity"><span>Humidity</span><strong data-weather-humidity>--%</strong></div></section><section class="weather-forecast"><h3>5-day forecast</h3><div data-weather-days></div></section><a class="weather-attribution" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Weather data by Open-Meteo</a></div>`;
+  }
+  const weatherDescription = code => {
+    if (code === 0) return 'Clear sky';
+    if (code === 1) return 'Mainly clear';
+    if (code === 2) return 'Partly cloudy';
+    if (code === 3) return 'Overcast';
+    if ([45, 48].includes(code)) return 'Fog';
+    if ([51, 53, 55].includes(code)) return 'Drizzle';
+    if ([56, 57].includes(code)) return 'Freezing drizzle';
+    if ([61, 63, 65].includes(code)) return 'Rain';
+    if ([66, 67].includes(code)) return 'Freezing rain';
+    if ([71, 73, 75].includes(code)) return 'Snow';
+    if (code === 77) return 'Snow grains';
+    if ([80, 81, 82].includes(code)) return 'Rain showers';
+    if ([85, 86].includes(code)) return 'Snow showers';
+    if ([95, 96, 99].includes(code)) return 'Thunderstorm';
+    return 'Unknown conditions';
+  };
+  const weatherIcon = code => code === 0 ? '☀️' : [1, 2].includes(code) ? '🌤️' : code === 3 ? '☁️' : [45, 48].includes(code) ? '🌫️' : [71, 73, 75, 77, 85, 86].includes(code) ? '🌨️' : [95, 96, 99].includes(code) ? '⛈️' : '🌧️';
+  async function loadWeather(win) {
+    const status = $('[data-weather-status]', win);
+    if (!status) return;
+    win._weatherController?.abort();
+    const controller = new AbortController(); win._weatherController = controller;
+    status.textContent = 'Getting your location…';
+    try {
+      if (!navigator.geolocation) throw new Error('Location is not available in this browser.');
+      const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 }));
+      if (!win.isConnected || controller.signal.aborted) return;
+      const { latitude, longitude } = position.coords;
+      const query = new URLSearchParams({ latitude: String(latitude), longitude: String(longitude), current: 'temperature_2m,relative_humidity_2m,weather_code', daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max', timezone: 'auto', forecast_days: '5' });
+      const response = await fetch(`https://api.open-meteo.com/v1/forecast?${query}`, { signal: controller.signal });
+      if (!response.ok) throw new Error('Weather service unavailable.');
+      const data = await response.json();
+      if (!win.isConnected || controller.signal.aborted) return;
+      $('[data-weather-location]', win).textContent = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
+      $('[data-weather-temperature]', win).textContent = `${Math.round(data.current.temperature_2m)}°`;
+      $('[data-weather-humidity]', win).textContent = `${Math.round(data.current.relative_humidity_2m)}%`;
+      $('[data-weather-description]', win).textContent = weatherDescription(data.current.weather_code);
+      $('[data-weather-icon]', win).textContent = weatherIcon(data.current.weather_code);
+      $('[data-weather-days]', win).innerHTML = data.daily.time.map((day, index) => `<article class="weather-day"><span>${escapeHTML(formatDate(new Date(`${day}T12:00:00`), { weekday: 'short' }))}</span><span>${weatherIcon(data.daily.weather_code[index])}</span><span>${Math.round(data.daily.temperature_2m_min[index])}° / ${Math.round(data.daily.temperature_2m_max[index])}°</span><small>${Math.round(data.daily.precipitation_probability_max[index] || 0)}%</small></article>`).join('');
+      status.textContent = 'Live forecast for your location';
+      translateElement(win);
+    } catch (error) {
+      if (!win.isConnected || controller.signal.aborted) return;
+      status.textContent = error.code === 1 ? 'Location access was denied.' : error.code ? 'Unable to get your location.' : error.message === 'Location is not available in this browser.' ? error.message : 'Weather service unavailable.';
+      translateElement(win);
+    }
+  }
+  function storageMarkup() {
+    return `<div class="storage-manager"><header class="storage-heading"><div><h2>Storage Manager</h2><p data-storage-status>Calculating storage…</p></div><button data-action="storage-refresh" aria-label="Refresh storage" title="Refresh storage">↻</button></header><section class="storage-overview"><div class="storage-overview-head"><span>System storage used</span><strong data-storage-used>--</strong></div><div class="storage-meter"><i data-storage-meter></i></div><div class="storage-overview-foot"><span data-storage-free>-- free</span><span data-storage-quota>-- total</span></div></section><section class="storage-stats"><article><span data-storage-file-count>0</span><strong>Managed files</strong><small data-storage-files-size>--</small></article><article><span data-storage-items>0</span><strong>Folders</strong><small>Stored in Nova OS</small></article><article><span data-storage-usage-percent>0%</span><strong>Space used</strong><small>Of simulated storage capacity</small></article></section></div>`;
+  }
+  function gmailMarkup() {
+    return `<div class="gmail-app"><div class="gmail-mark" aria-hidden="true">M</div><h2>Gmail</h2><p>Real messages require your Google account.</p><p>You will sign in on Google’s website.</p><a class="primary-button gmail-open-link" href="https://mail.google.com/mail/u/0/#inbox" target="_blank" rel="noopener noreferrer">Open Gmail <span aria-hidden="true">↗</span></a></div>`;
+  }
+  function mapsMarkup() {
+    const initialUrl = 'https://www.google.com/maps?q=World&output=embed';
+    const externalUrl = 'https://www.google.com/maps/search/?api=1&query=World';
+    return `<div class="maps-app"><form class="maps-search-form"><label class="sr-only" for="mapsQuery">Search a place or address</label><input id="mapsQuery" name="query" type="search" placeholder="Search a place or address" aria-label="Search a place or address"><button class="primary-button" type="submit">Search Google Maps</button><button type="button" data-action="maps-location">◎ <span>Use my location</span></button></form><div class="maps-toolbar"><span data-map-status>Google Maps · Search, directions, and places</span><a data-map-external href="${externalUrl}" target="_blank" rel="noopener noreferrer">Open Google Maps ↗</a></div><iframe class="google-map-frame" data-google-map src="${initialUrl}" title="Google Maps" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>`;
+  }
+  function setGoogleMap(win, query) {
+    const place = String(query || '').trim();
+    if (!place || !win?.isConnected) return;
+    const encodedPlace = encodeURIComponent(place);
+    $('[data-google-map]', win).src = `https://www.google.com/maps?q=${encodedPlace}&output=embed`;
+    $('[data-map-external]', win).href = `https://www.google.com/maps/search/?api=1&query=${encodedPlace}`;
+    $('[data-map-status]', win).textContent = place;
+  }
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const unitIndex = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+    return `${new Intl.NumberFormat(locale(), { maximumFractionDigits: unitIndex ? 1 : 0 }).format(bytes / 1024 ** unitIndex)} ${units[unitIndex]}`;
+  }
+  async function refreshStorage(win) {
+    if (!win?.isConnected) return;
+    const status = $('[data-storage-status]', win);
+    status.textContent = 'Calculating storage…';
+    if (!win.isConnected) return;
+    const usage = SYSTEM_STORAGE_USAGE;
+    const quota = STORAGE_QUOTA;
+    const free = quota - usage;
+    const managedFiles = [...state.files, ...state.recycle];
+    const filesSize = new Blob(managedFiles.map(file => JSON.stringify(file))).size;
+    const percentage = quota ? Math.min(100, usage / quota * 100) : 0;
+    $('[data-storage-used]', win).textContent = formatBytes(usage);
+    $('[data-storage-free]', win).textContent = `${formatBytes(free)} free`;
+    $('[data-storage-quota]', win).textContent = `${formatBytes(quota)} total`;
+    $('[data-storage-meter]', win).style.width = `${percentage}%`;
+    $('[data-storage-file-count]', win).textContent = String(managedFiles.filter(file => file.type !== 'folder').length);
+    $('[data-storage-files-size]', win).textContent = formatBytes(filesSize);
+    $('[data-storage-items]', win).textContent = String(managedFiles.filter(file => file.type === 'folder').length);
+    $('[data-storage-usage-percent]', win).textContent = `${Math.round(percentage)}%`;
+    status.textContent = 'Simulated storage capacity.';
+    translateElement(win);
   }
   function performanceMarkup() {
     return `<div class="performance-grid">${[['CPU', 'cpu'], ['Memory', 'ram'], ['Storage', 'storage'], ['Network', 'network']].map(([label, id]) => `<div class="metric-card" data-metric="${id}"><div class="metric-head"><span>${label}</span><span data-metric-value>--%</span></div><div class="metric-value" data-metric-large>--%</div><div class="metric-bar"><i></i></div><div class="chart"></div></div>`).join('')}</div>`;
   }
   function profileMarkup() {
-    return `<section class="settings-main"><h2>Your account</h2><p class="settings-subtitle">Personalize the details shown around Nova OS.</p><form class="profile-form"><div class="profile-preview"><span class="avatar" data-profile-avatar></span><span><strong>${escapeHTML(state.user.username)}</strong><small class="settings-subtitle">This computer</small></span></div><label>Language<select name="language" data-setting="language"><option value="en" ${state.settings.language === 'en' ? 'selected' : ''}>English</option><option value="sq" ${state.settings.language === 'sq' ? 'selected' : ''}>Shqip (Albanian)</option></select></label><label>Profile picture URL<input name="picture" type="text" placeholder="https://example.com/photo.jpg" value="${escapeHTML(state.user.picture)}"></label><label>Your name<input name="username" type="text" maxlength="30" required value="${escapeHTML(state.user.username)}"></label><label>Computer name<input name="computerName" type="text" maxlength="24" required value="${escapeHTML(state.user.computerName)}"></label><button class="primary-button" type="submit">Save changes</button></form></section>`;
+    const profilePicture = profilePictureDraft ?? state.user.picture;
+    const avatar = profilePicture ? `<img alt="" src="${escapeHTML(profilePicture)}">` : escapeHTML((state.user.username.trim()[0] || 'N').toUpperCase());
+    return `<section class="settings-main"><h2>Your account</h2><p class="settings-subtitle">Personalize the details shown around Nova OS.</p><form class="profile-form"><div class="profile-preview"><span class="avatar" data-profile-avatar>${avatar}</span><span><strong>${escapeHTML(state.user.username)}</strong><small class="settings-subtitle">This computer</small></span></div><label>Language<select name="language" data-setting="language"><option value="en" ${state.settings.language === 'en' ? 'selected' : ''}>English</option><option value="sq" ${state.settings.language === 'sq' ? 'selected' : ''}>Shqip (Albanian)</option></select></label><div class="profile-photo-field"><span class="profile-photo-label">Profile photo</span><label class="wallpaper-upload-button">Choose photo<input type="file" data-profile-picture accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/avif,image/tiff" aria-label="Choose profile photo"></label><small data-profile-picture-name>${escapeHTML(profilePictureName || 'Choose an image file up to 15 MB.')}</small></div><label>Your name<input name="username" type="text" maxlength="30" required value="${escapeHTML(state.user.username)}"></label><label>Computer name<input name="computerName" type="text" maxlength="24" required value="${escapeHTML(state.user.computerName)}"></label><button class="primary-button" type="submit">Save changes</button></form></section>`;
   }
   function bindBrowser(win) {
     const page = $('[data-browser-page]', win); if (!page) return;
@@ -1120,6 +1484,10 @@
     if (key === 'AC') calcExpression = '';
     else if (key === '⌫') calcExpression = calcExpression.slice(0, -1);
     else if (key === '±') calcExpression = calcExpression.startsWith('-') ? calcExpression.slice(1) : `-${calcExpression}`;
+    else if (key === '√') calcExpression += 'sqrt(';
+    else if (key === 'x²') calcExpression += '^2';
+    else if (key === '1/x') calcExpression += '1/(';
+    else if (['sin', 'cos', 'tan', 'ln', 'log'].includes(key)) calcExpression += `${key}(`;
     else if (key === '=') {
       const value = evaluateExpression(calcExpression);
       if (value !== null) {
@@ -1131,9 +1499,10 @@
     const preview = evaluateExpression(calcExpression); result.textContent = preview === null ? (calcExpression ? '…' : '0') : String(preview);
   }
   function evaluateExpression(expression) {
-    if (!expression || !/^[\d+\-*/().%\s]+$/.test(expression)) return null;
-    const normalized = expression.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)').replace(/[+\-*/.]\s*$/, '');
-    if (!normalized) return null;
+    if (!expression || !/^[\d+\-*/().%\sπ√a-z^]+$/i.test(expression)) return null;
+    const normalized = expression.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)').replace(/π/g, 'Math.PI').replace(/√\(/g, 'Math.sqrt(').replace(/\b(sin|cos|tan)\(/g, (_, fn) => `Math.${fn}((Math.PI/180)*`).replace(/\bln\(/g, 'Math.log(').replace(/\blog\(/g, 'Math.log10(').replace(/sqrt\(/g, 'Math.sqrt(').replace(/\^/g, '**').replace(/[+\-*/.]\s*$/, '');
+    const safeExpression = normalized.replace(/Math\.(?:PI|sqrt|sin|cos|tan|log10|log)/g, '');
+    if (!normalized || !/^[\d+\-*/().%\s]*$/.test(safeExpression)) return null;
     try { const value = Function(`"use strict"; return (${normalized})`)(); return Number.isFinite(value) ? Number(value.toPrecision(11)) : null; } catch { return null; }
   }
   function terminalPrint(win, text, className = '') {
@@ -1208,7 +1577,9 @@
     const input = $('#pinInput'); input.classList.toggle('is-hidden', !hasPasscode); input.required = hasPasscode;
     input.placeholder = hasPasscode ? 'Enter passcode' : ''; input.setAttribute('aria-label', hasPasscode ? 'Enter passcode' : 'No passcode required');
     $('label[for="pinInput"]').classList.toggle('is-hidden', !hasPasscode);
-    $('#unlockForm button[type="submit"]').innerHTML = hasPasscode ? 'Unlock <span aria-hidden="true">→</span>' : 'Continue <span aria-hidden="true">→</span>';
+    const continueButton = $('#unlockForm button[type="submit"]');
+    continueButton.innerHTML = hasPasscode ? 'Unlock <span aria-hidden="true">→</span>' : 'Continue <span aria-hidden="true">→</span>';
+    $('#pinError').classList.remove('is-hidden');
     $('#pinError').textContent = hasPasscode ? 'Enter your passcode to continue' : 'No passcode is set. You can continue.';
   }
   function lockOS() { $('#desktopShell').classList.add('is-hidden'); $('#lockScreen').classList.remove('is-hidden'); $('#pinInput').value = ''; updateLockScreen(); }
@@ -1259,6 +1630,9 @@
     $('#trayNetwork').addEventListener('click', () => toast('Network', 'Connected to Nova network.', '◔'));
     $('#trayVolume').addEventListener('click', () => togglePanel('volumePanel', updateVolumeControl));
     $('#trayBattery').addEventListener('click', () => toast('Battery', '86% · Power source: simulated.', '▰'));
+    $('#desktopFullscreenButton').addEventListener('click', toggleDesktopFullscreen);
+    document.addEventListener('fullscreenchange', updateFullscreenButton);
+    updateFullscreenButton();
     $('#powerOnButton').addEventListener('click', () => { $('#shutdownScreen').classList.add('is-hidden'); $('#lockScreen').classList.remove('is-hidden'); });
     $('#matrixLayer .matrix-close').addEventListener('click', () => { $('#matrixLayer').classList.add('is-hidden'); cancelAnimationFrame(matrixAnimation); });
     $('#desktop').addEventListener('pointerdown', event => { if (event.target === $('#desktop')) closePanels(); });
@@ -1284,8 +1658,25 @@
       const win = target.closest('.window');
       if (target.dataset.windowAction === 'close') closeWindow(win);
       if (target.dataset.windowAction === 'minimize') { win.classList.add('minimized'); renderTaskbar(); }
+      if (target.dataset.windowAction === 'restart') restartApp(win);
       if (target.dataset.windowAction === 'maximize') toggleMaximize(win);
       return;
+    }
+    if (target.dataset.clockAction) { handleClockAction(target.closest('.window'), target.dataset.clockAction); return; }
+    if (target.dataset.calendarMonth) {
+      const direction = target.dataset.calendarMonth === 'next' ? 1 : -1;
+      calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + direction, 1);
+      selectedCalendarDate = localDateKey(calendarViewDate);
+      rerenderApp('calendar'); return;
+    }
+    if (target.dataset.calendarDay) {
+      selectedCalendarDate = target.dataset.calendarDay;
+      calendarViewDate = new Date(`${selectedCalendarDate}T12:00:00`);
+      rerenderApp('calendar'); return;
+    }
+    if (target.dataset.deleteEvent) {
+      state.events = state.events.filter(item => item.id !== target.dataset.deleteEvent);
+      persist(); rerenderApp('calendar'); return;
     }
     if (target.dataset.folder) { currentFolder = target.dataset.folder; fileQuery = ''; selectedFileId = null; rerenderApp('files'); return; }
     if (target.dataset.fileId) {
@@ -1297,7 +1688,12 @@
     }
     if (target.dataset.action) { handleAction(target.dataset.action, target); return; }
     if (target.dataset.openApp) { openApp(target.dataset.openApp); return; }
-    if (target.dataset.settingsSection) { const win = target.closest('.window'); $('.window-body', win).innerHTML = settingsMarkup(target.dataset.settingsSection); return; }
+    if (target.dataset.bluetoothDevice) {
+      const device = target.dataset.bluetoothDevice;
+      state.settings.bluetoothDevice = state.settings.bluetoothDevice === device ? '' : device;
+      persist(); rerenderApp('settings'); return;
+    }
+    if (target.dataset.settingsSection) { const win = target.closest('.window'); win.dataset.settingsSection = target.dataset.settingsSection; $('.window-body', win).innerHTML = settingsMarkup(target.dataset.settingsSection); return; }
     if (target.dataset.wallpaper !== undefined) { state.settings.wallpaper = target.dataset.wallpaper === 'custom' ? 'custom' : Number(target.dataset.wallpaper); persist(); applySettings(); rerenderApp('settings'); notify('Wallpaper updated', 'Your desktop has a new view.', '◐'); return; }
     if (target.dataset.calc) { calcPress(target.dataset.calc, target.closest('.window')); return; }
     const closeTab = event.target.closest('[data-browser-close]');
@@ -1338,6 +1734,22 @@
     if (action === 'volume-test') {
       const status = $('#volumeStatus');
       status.textContent = state.settings.volume === 0 ? 'Volume is muted.' : playSound() ? 'Test sound played.' : 'Audio is unavailable in this browser.';
+      return;
+    }
+    if (action === 'weather-refresh') { loadWeather(win); return; }
+    if (action === 'storage-refresh') { refreshStorage(win); return; }
+    if (action === 'maps-location') {
+      const status = $('[data-map-status]', win);
+      if (!navigator.geolocation) { status.textContent = 'Unable to get your location.'; return; }
+      status.textContent = 'Getting your location…';
+      navigator.geolocation.getCurrentPosition(position => {
+        const query = `${position.coords.latitude},${position.coords.longitude}`;
+        $('[name="query"]', win).value = query;
+        setGoogleMap(win, query);
+      }, error => {
+        status.textContent = error.code === 1 ? 'Location access was denied.' : 'Unable to get your location.';
+        translateElement(win);
+      }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 });
       return;
     }
     if (action === 'modal-cancel') { $('#modalLayer').innerHTML = ''; return; }
@@ -1413,8 +1825,35 @@
     if (target.classList.contains('file-search')) { fileQuery = target.value; const win = target.closest('.window'); const list = $('[data-file-list]', win); const files = visibleFiles(); list.innerHTML = files.length ? files.map(file => `<button class="file-card" data-file-id="${escapeHTML(file.id)}"><span class="file-glyph">${iconForFile(file)}</span><strong>${escapeHTML(file.name)}</strong><small>${file.type === 'folder' ? 'Folder' : formatDate(new Date(file.modified))}</small></button>`).join('') : '<div class="empty-state">No matching files.</div>'; return; }
     if (target.classList.contains('note-editor')) { saveDraft(); const text = target.value; const words = text.trim() ? text.trim().split(/\s+/).length : 0; $('.note-count', target.closest('.editor-shell')).textContent = `${text.length} characters · ${words} words`; }
   }
-  function handleChange(event) {
+  async function handleChange(event) {
     const target = event.target;
+    if (target.matches('[data-notification-app]')) {
+      state.settings.notificationApps[target.dataset.notificationApp] = target.checked;
+      persist();
+      return;
+    }
+    if (target.matches('[data-profile-picture]')) {
+      const file = target.files?.[0];
+      const form = target.closest('.profile-form');
+      const submitButton = $('button[type="submit"]', form);
+      if (!file) return;
+      submitButton.disabled = true;
+      try {
+        const picture = await makeWallpaperDataUrl(file);
+        if (!form.isConnected) return;
+        profilePictureDraft = picture;
+        profilePictureName = file.name;
+        setAvatar($('[data-profile-avatar]', form), 'avatar', picture);
+        $('[data-profile-picture-name]', form).textContent = file.name;
+      } catch (error) {
+        console.error('Unable to use the profile photo.', error);
+        toast('Profile photo not changed', 'Unable to use this image. Choose a different photo.', '⚠');
+      } finally {
+        target.value = '';
+        if (form.isConnected) submitButton.disabled = false;
+      }
+      return;
+    }
     if (target.matches('[data-wallpaper-upload]')) {
       const file = target.files?.[0];
       target.value = '';
@@ -1426,8 +1865,16 @@
       return;
     }
     if (target.matches('[data-setting]')) {
-      const key = target.dataset.setting; state.settings[key] = target.type === 'checkbox' ? target.checked : target.value; persist(); applySettings(); rerenderApp('settings');
-      const label = ({ language: 'Language', theme: 'Color mode', accent: 'Accent color', taskbarPosition: 'Taskbar position', iconSize: 'Icon size', notifications: 'Notification preference', sounds: 'Notification sounds' })[key] || key;
+      const key = target.dataset.setting; state.settings[key] = target.type === 'checkbox' ? target.checked : target.value;
+      if (key === 'bluetooth' && !state.settings.bluetooth) state.settings.bluetoothDevice = '';
+      persist(); applySettings(); rerenderApp('settings');
+      if (key === 'language') {
+        if (getAppWindow('calendar')) rerenderApp('calendar');
+        if (getAppWindow('clock')) updateClockApp(getAppWindow('clock'));
+        if (getAppWindow('weather')) loadWeather(getAppWindow('weather'));
+        if (getAppWindow('storage')) refreshStorage(getAppWindow('storage'));
+      }
+      const label = ({ language: 'Language', theme: 'Color mode', accent: 'Accent color', taskbarPosition: 'Taskbar position', iconSize: 'Icon size', notifications: 'Notification preference', sounds: 'Notification sounds', bluetooth: 'Bluetooth' })[key] || key;
       notify('Setting updated', `${label} changed.`, '⚙️');
     }
     if (target.classList.contains('file-sort')) { fileSort = target.value; rerenderApp('files'); }
@@ -1453,8 +1900,23 @@
     }
     if (form.classList.contains('terminal-form')) { event.preventDefault(); const input = $('input', form); const command = input.value; input.value = ''; runCommand(form.closest('.window'), command); }
     if (form.classList.contains('browser-address-form')) { event.preventDefault(); const address = $('.browser-address', form.closest('.window')).value.trim(); navigateBrowser(form.closest('.window'), address); }
+    if (form.classList.contains('maps-search-form')) {
+      event.preventDefault();
+      const query = String(new FormData(form).get('query') || '').trim();
+      if (query) setGoogleMap(form.closest('.window'), query);
+      return;
+    }
+    if (form.classList.contains('calendar-event-form')) {
+      event.preventDefault();
+      const data = new FormData(form); const title = String(data.get('title') || '').trim(); const date = String(data.get('date') || '');
+      if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+      state.events.push({ id: `event-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, title, date, time: String(data.get('time') || '') });
+      selectedCalendarDate = date; calendarViewDate = new Date(`${date}T12:00:00`); persist(); rerenderApp('calendar');
+      notify('Event added', title, '📅', 'calendar');
+      return;
+    }
     if (form.classList.contains('profile-form')) {
-      event.preventDefault(); const data = new FormData(form); state.user.username = String(data.get('username')).trim() || 'Nova User'; state.user.computerName = String(data.get('computerName')).trim().replace(/\s+/g, '-').toUpperCase() || 'NOVA-DESKTOP'; state.user.picture = String(data.get('picture')).trim(); persist(); renderProfileBits(); renderStartMenu(); rerenderApp('profile'); notify('Profile updated', `Welcome, ${state.user.username}.`, '👤');
+      event.preventDefault(); const data = new FormData(form); const previousUser = state.user; state.user = { ...state.user, username: String(data.get('username')).trim() || 'Nova User', computerName: String(data.get('computerName')).trim().replace(/\s+/g, '-').toUpperCase() || 'NOVA-DESKTOP', picture: profilePictureDraft ?? state.user.picture }; if (!persist()) { state.user = previousUser; return; } profilePictureDraft = null; profilePictureName = ''; renderProfileBits(); renderStartMenu(); rerenderApp('profile'); notify('Profile updated', `Welcome, ${state.user.username}.`, '👤');
     }
     if (form.classList.contains('modal-box')) { /* Modal owns its own submit handler. */ }
   }
@@ -1476,7 +1938,7 @@
       return;
     }
     if (getAppWindow('calculator')?.classList.contains('active-window') && !event.ctrlKey) {
-      const map = { Enter: '=', Backspace: '⌫', Escape: 'AC', '*': '×', '/': '÷', '-': '−', '+': '+', '.': '.', '%': '%', '=': '=' };
+      const map = { Enter: '=', Backspace: '⌫', Escape: 'AC', '*': '×', '/': '÷', '-': '−', '+': '+', '.': '.', '%': '%', '=': '=', '(': '(', ')': ')', '^': '^' };
       const mapped = map[event.key] || (/^\d$/.test(event.key) ? event.key : null);
       if (mapped) { event.preventDefault(); calcPress(mapped, getAppWindow('calculator')); }
     }

@@ -203,6 +203,11 @@ button {
   height: 100%;
   object-fit: cover;
 }
+.lock-avatar-portrait {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 .unlock-form {
   display: flex;
   gap: 8px;
@@ -220,8 +225,15 @@ button {
 }
 .unlock-form small {
   flex-basis: 100%;
+  width: min(280px, 100%);
+  margin: 0 auto;
   color: #ced7e3;
   font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}
+.unlock-form button[type="submit"] {
+  width: min(280px, 100%);
 }
 .lock-footer {
   position: absolute;
@@ -291,6 +303,21 @@ button {
   background:
     radial-gradient(ellipse at 71% 42%, #c88e79 0, transparent 21%),
     linear-gradient(130deg, #29263b, #63707e 57%, #d2ae91);
+}
+.desktop[data-wallpaper="4"] {
+  background:
+    radial-gradient(ellipse at 74% 28%, #a9d6e5 0, transparent 22%),
+    linear-gradient(145deg, #102a43, #2c7da0 55%, #1b4965);
+}
+.desktop[data-wallpaper="5"] {
+  background:
+    radial-gradient(ellipse at 31% 69%, #ff8c42 0, transparent 23%),
+    linear-gradient(135deg, #302b63, #b33771 58%, #512b58);
+}
+.desktop[data-wallpaper="6"] {
+  background:
+    radial-gradient(ellipse at 72% 34%, #d8f3dc 0, transparent 21%),
+    linear-gradient(135deg, #1b4332, #40916c 55%, #081c15);
 }
 .wallpaper-glow {
   pointer-events: none;
@@ -391,6 +418,15 @@ button {
   color: #eef3f9;
   transition: background 0.14s;
 }
+.fullscreen-button svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
 .taskbar-button:hover,
 .tray-icon:hover,
 .clock-button:hover,
@@ -398,6 +434,10 @@ button {
 .taskbar-button.active,
 .tray-icon.active {
   background: rgba(255, 255, 255, 0.12);
+}
+.fullscreen-button.active {
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--accent);
 }
 .nova-glyph {
   display: grid;
@@ -910,6 +950,10 @@ button {
   flex-direction: column;
   gap: 10px;
 }
+.window[data-app="calculator"].maximized .calc-shell {
+  max-width: none;
+  padding: 20px;
+}
 .calc-display {
   min-height: 88px;
   display: flex;
@@ -940,6 +984,52 @@ button {
   gap: 7px;
   flex: 1;
 }
+.calc-full-layout {
+  display: none;
+}
+.calc-key.calc-scientific {
+  display: none;
+}
+.window[data-app="calculator"].maximized .calc-grid {
+  display: none;
+}
+.window[data-app="calculator"].maximized .calc-full-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
+  gap: 12px;
+  flex: 1;
+}
+.calc-full-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(48px, 1fr));
+  gap: 10px;
+}
+.calc-full-tools {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.calc-full-operators,
+.calc-full-scientific {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(48px, 1fr));
+  gap: 8px;
+}
+.calc-full-scientific {
+  grid-template-rows: repeat(3, minmax(42px, 1fr));
+}
+.window[data-app="calculator"].maximized .calc-key {
+  min-width: 0;
+  font-size: clamp(14px, 1.2vw, 20px);
+}
+.window[data-app="calculator"].maximized .calc-key.calc-scientific {
+  display: block;
+}
 .calc-key {
   border: 1px solid rgba(255, 255, 255, 0.055);
   border-radius: 8px;
@@ -959,6 +1049,9 @@ button {
   color: #14252d;
   font-weight: 700;
 }
+.bluetooth-device button {
+  min-width: 84px;
+}
 .calc-history {
   max-height: 90px;
   overflow: auto;
@@ -966,6 +1059,17 @@ button {
   padding: 7px 3px 0;
   color: #9eacbf;
   font-size: 10px;
+}
+.notification-app-list {
+  border-top: 1px solid var(--line);
+}
+.notification-app-list .setting-row {
+  min-height: 42px;
+}
+.notification-app-list .setting-row > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 .calc-history div {
   display: flex;
@@ -1187,6 +1291,7 @@ button {
 .settings-nav {
   border-right: 1px solid var(--line);
   padding: 12px 8px;
+  overflow-y: auto;
 }
 .settings-main {
   padding: 22px;
@@ -1338,6 +1443,21 @@ button {
   display: grid;
   gap: 6px;
 }
+.profile-photo-field {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+.profile-photo-label {
+  color: #aab6c7;
+  font-size: 11px;
+}
+.profile-photo-field small {
+  max-width: 100%;
+  color: #96a3b7;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
 .profile-form input {
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -1404,6 +1524,460 @@ button {
   background: rgba(142, 216, 196, 0.55);
   border-radius: 2px 2px 0 0;
   transition: height 0.5s;
+}
+.calendar-app {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(235px, 0.72fr);
+}
+.calendar-app-main,
+.calendar-app-events {
+  min-width: 0;
+  padding: 18px;
+}
+.calendar-app-main {
+  border-right: 1px solid var(--line);
+}
+.calendar-app-heading,
+.weather-app-heading,
+.storage-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.calendar-app-heading h2,
+.calendar-app-events h2,
+.weather-app h2,
+.weather-app h3,
+.storage-manager h2,
+.timer-face h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.calendar-app-heading button,
+.weather-app-heading button,
+.storage-heading button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font-size: 20px;
+}
+.calendar-app-grid {
+  margin-top: 13px;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.calendar-app-weekday,
+.calendar-app-empty,
+.calendar-app-day {
+  min-width: 0;
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+}
+.calendar-app-weekday {
+  color: #9eacbf;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.calendar-app-day {
+  position: relative;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+}
+.calendar-app-day:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.calendar-app-day.today {
+  border-color: var(--accent);
+}
+.calendar-app-day.selected {
+  background: var(--accent);
+  color: #12212a;
+  font-weight: 700;
+}
+.calendar-app-day.has-events::after {
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  content: "";
+}
+.calendar-app-day.selected.has-events::after {
+  background: currentColor;
+}
+.calendar-app-events {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.calendar-app-events h2 {
+  font-size: 14px;
+}
+.calendar-event-list {
+  min-height: 58px;
+  max-height: 170px;
+  overflow: auto;
+}
+.calendar-event {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+}
+.calendar-event-time {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.calendar-event button {
+  border: 0;
+  background: transparent;
+  color: #c3cbd6;
+  font-size: 17px;
+}
+.calendar-event-form,
+.calendar-event-form label {
+  display: grid;
+  gap: 7px;
+}
+.calendar-event-form {
+  margin-top: auto;
+  gap: 10px;
+}
+.calendar-event-form label,
+.timer-face label {
+  color: #aab6c7;
+  font-size: 10px;
+}
+.calendar-event-form input,
+.timer-face input {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.055);
+  color: inherit;
+  padding: 8px;
+}
+.clock-app {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(190px, 0.8fr);
+  gap: 18px;
+  padding: 20px;
+}
+.clock-face,
+.timer-face {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+}
+.clock-app-label {
+  color: #aab6c7;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.clock-app-time {
+  font: 500 48px/1 "Space Grotesk", sans-serif;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.clock-app-date {
+  color: #c7d1dd;
+  font-size: 12px;
+}
+.timer-face {
+  padding: 20px 16px;
+  border-left: 1px solid var(--line);
+}
+.timer-display {
+  font: 500 44px/1 "Space Grotesk", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.timer-face label {
+  width: min(150px, 100%);
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+.timer-actions {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+}
+.timer-actions button {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+.timer-actions .primary-button {
+  background: var(--accent);
+  color: #12212a;
+}
+.weather-app,
+.storage-manager {
+  min-height: 100%;
+  padding: 20px;
+}
+.gmail-app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px;
+  text-align: center;
+}
+.gmail-mark {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(234, 67, 53, 0.35);
+  border-radius: 14px;
+  background: rgba(234, 67, 53, 0.1);
+  color: #ea4335;
+  font: 700 34px/1 "Space Grotesk", sans-serif;
+}
+.gmail-app h2 {
+  margin: 5px 0 0;
+  font-size: 21px;
+}
+.gmail-app p {
+  max-width: 330px;
+  margin: 0;
+  color: #aab6c7;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.gmail-open-link {
+  margin-top: 6px;
+  text-decoration: none;
+}
+.maps-app {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px;
+}
+.maps-search-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 7px;
+}
+.maps-search-form input {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.055);
+  color: inherit;
+  padding: 9px 11px;
+}
+.maps-search-form button {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  padding: 7px 10px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.maps-search-form .primary-button {
+  background: var(--accent);
+  color: #12212a;
+}
+.maps-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #aab6c7;
+  font-size: 10px;
+}
+.maps-toolbar a {
+  color: var(--accent);
+  white-space: nowrap;
+}
+.google-map-frame {
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #e7e5e1;
+}
+.weather-app-heading p,
+.storage-heading p {
+  margin: 4px 0 0;
+  color: #9eacbf;
+  font-size: 11px;
+}
+.weather-status,
+[data-storage-status] {
+  margin: 16px 0;
+  color: #9eacbf;
+  font-size: 11px;
+}
+.weather-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.weather-current-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.weather-icon {
+  font-size: 39px;
+}
+.weather-current-main div {
+  display: grid;
+  gap: 3px;
+}
+.weather-current-main strong {
+  font: 500 38px/1 "Space Grotesk", sans-serif;
+}
+.weather-current-main div span:last-child {
+  color: #aab6c7;
+  font-size: 11px;
+}
+.weather-humidity {
+  display: grid;
+  gap: 4px;
+  color: #aab6c7;
+  font-size: 10px;
+  text-align: right;
+}
+.weather-humidity strong {
+  color: #edf1f7;
+  font-size: 16px;
+}
+.weather-forecast {
+  margin-top: 18px;
+}
+.weather-forecast h3 {
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.weather-forecast [data-weather-days] {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.weather-day {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 12px 4px;
+  color: #d9e1ec;
+  font-size: 10px;
+}
+.weather-day + .weather-day {
+  border-left: 1px solid var(--line);
+}
+.weather-day small {
+  color: #9eacbf;
+}
+.weather-attribution {
+  display: inline-block;
+  margin-top: 13px;
+  color: #9eacbf;
+  font-size: 10px;
+}
+.storage-overview {
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.storage-overview-head,
+.storage-overview-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+}
+.storage-overview-head strong {
+  font: 500 18px "Space Grotesk", sans-serif;
+}
+.storage-meter {
+  height: 8px;
+  margin: 12px 0 8px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.storage-meter i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+.storage-overview-foot {
+  color: #9eacbf;
+  font-size: 10px;
+}
+.storage-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.storage-stats article {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.035);
+}
+.storage-stats article > span {
+  font: 500 19px "Space Grotesk", sans-serif;
+  overflow-wrap: anywhere;
+}
+.storage-stats strong {
+  font-size: 11px;
+}
+.storage-stats small {
+  color: #9eacbf;
+  font-size: 9px;
+  overflow-wrap: anywhere;
 }
 .notification-panel,
 .calendar-panel,
@@ -2065,6 +2639,29 @@ button {
   :root {
     --taskbar-height: 60px;
   }
+  .taskbar-main {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .running-apps {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .running-apps::-webkit-scrollbar {
+    display: none;
+  }
+  .running-apps .taskbar-app {
+    display: flex;
+    flex: 0 0 38px;
+    align-items: center;
+    justify-content: center;
+  }
+  .system-tray {
+    flex: 0 0 auto;
+  }
   .taskbar {
     padding: 0 5px;
   }
@@ -2201,14 +2798,45 @@ button {
   }
 }
 @media (max-width: 430px) {
-  .pinned-apps .taskbar-app:nth-child(n + 4) {
+  .pinned-apps .taskbar-app:nth-child(n + 3) {
     display: none;
   }
   .system-tray #trayNetwork {
     display: none;
   }
+  .system-tray #trayBattery {
+    display: none;
+  }
   .taskbar {
     padding: 0 3px;
+  }
+  .taskbar-main,
+  .system-tray {
+    gap: 2px;
+  }
+  .start-button,
+  .search-button {
+    flex: 0 0 36px;
+    min-width: 36px;
+    width: 36px;
+  }
+  .pinned-apps .taskbar-app {
+    flex: 0 0 34px;
+    width: 34px;
+    min-width: 34px;
+  }
+  .tray-icon {
+    flex: 0 0 28px;
+    width: 28px;
+    min-width: 28px;
+  }
+  .clock-button {
+    flex: 0 0 52px;
+    min-width: 52px;
+  }
+  .profile-tray {
+    flex: 0 0 32px;
+    min-width: 32px;
   }
   .desktop-icons {
     gap: 0;
@@ -2255,6 +2883,85 @@ button {
   }
   .lock-clock {
     font-size: 70px;
+  }
+}
+@media (max-width: 360px) {
+  .pinned-apps .taskbar-app:nth-child(n + 2) {
+    display: none;
+  }
+  .start-button,
+  .search-button {
+    flex-basis: 32px;
+    min-width: 32px;
+    width: 32px;
+  }
+  .tray-icon {
+    flex-basis: 26px;
+    width: 26px;
+    min-width: 26px;
+  }
+  .clock-button {
+    flex-basis: 48px;
+    min-width: 48px;
+  }
+}
+@media (max-width: 760px) {
+  .calendar-app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .calendar-app-main {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .calendar-app-events {
+    min-height: 330px;
+  }
+  .clock-app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .clock-face {
+    min-height: 190px;
+  }
+  .timer-face {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+  .timer-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .maps-search-form {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .maps-search-form input {
+    grid-column: 1 / -1;
+  }
+  .maps-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+}
+@media (max-width: 430px) {
+  .calendar-app-main,
+  .calendar-app-events,
+  .weather-app,
+  .storage-manager {
+    padding: 13px;
+  }
+  .calendar-app-weekday,
+  .calendar-app-empty,
+  .calendar-app-day {
+    min-height: 36px;
+  }
+  .weather-forecast [data-weather-days] {
+    grid-template-columns: repeat(5, minmax(48px, 1fr));
+    overflow-x: auto;
+  }
+  .clock-app-time {
+    font-size: 36px;
+  }
+  .storage-stats {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 .setup-screen {
